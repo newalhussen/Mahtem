@@ -1,0 +1,63 @@
+spring:
+  application:
+    name: mahtem-api
+  # Local overrides live in an untracked .env file next to the jar / pom (KEY=value lines).
+  config:
+    import: optional:file:.env[.properties]
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/mahtem}
+    username: ${DB_USER:mahtem}
+    password: ${DB_PASSWORD:mahtem}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate          # the schema is owned by Flyway migrations, never by Hibernate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+  servlet:
+    multipart:
+      max-file-size: 2MB
+      max-request-size: 2MB
+
+server:
+  port: ${PORT:8080}
+  # Honour X-Forwarded-* from the frontend proxy. Only run behind a proxy you control.
+  forward-headers-strategy: framework
+  error:
+    include-message: never
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+mahtem:
+  # Base URL of the public verification site. Printed on certificates and encoded in the QR code.
+  public-base-url: ${MAHTEM_PUBLIC_BASE_URL:http://localhost:3000}
+  security:
+    # 32 random bytes, base64. Encrypts organizations' signing keys and TOTP secrets at rest.
+    master-key: ${MAHTEM_MASTER_KEY:}
+    # HMAC secret (32+ chars) for session tokens.
+    jwt-secret: ${MAHTEM_JWT_SECRET:}
+    session-ttl: 8h
+    cookie-secure: ${MAHTEM_COOKIE_SECURE:false}
+    # Browser origins allowed to make state-changing calls (CSRF defence in depth on top of SameSite).
+    allowed-origins: ${MAHTEM_ALLOWED_ORIGINS:http://localhost:3000}
+    # Salt for hashing visitor IPs in the verification log. Raw IPs are never stored.
+    ip-salt: ${MAHTEM_IP_SALT:}
+  rate-limit:
+    verify-per-minute: 120
+    login-per-minute: 20
+  # Issuers must prove control of their domain (DNS TXT) before sealing credentials.
+  require-verified-domain: true
+  seed:
+    demo-data: ${MAHTEM_SEED_DEMO:false}
